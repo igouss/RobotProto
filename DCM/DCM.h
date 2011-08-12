@@ -1,6 +1,9 @@
 #ifndef DCM_H_
 #define DCM_H_
 
+
+namespace naxsoft {
+
 class DCM {
 public:
 	/**
@@ -42,4 +45,5 @@ public:
 	static void computeQpFromQg();
 };
 
+} // namespace
 #endif /* DCM_H_ */

@@ -1,4 +1,7 @@
 #include "DCM.h"
+
+namespace naxsoft {
+
 /*
 void DCM::updateR(double o, double w, double f) {
 	DCM::R[0][0] = cos(o) * cos(w);
@@ -32,3 +35,5 @@ void DCM::computeQpFromQg() {
 	Qp[1] = R[0][1] * Qg[0] + R[1][1] * Qg[1] + R[2][1] * Qg[2]; // Qg_x = r_xy * Qg_x + r_yy*Qg_y + r_xy*Qg_z
 	Qp[2] = R[0][2] * Qg[0] + R[1][2] * Qg[1] + R[2][2] * Qg[2]; // Qg_x = r_xz * Qg_x + r_yz*Qg_y + r_zz*Qg_z
 }
+
+} //namespace
