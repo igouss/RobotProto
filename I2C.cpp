@@ -4,7 +4,7 @@
 namespace naxsoft {
     // I2C functions
 
-    void I2C::sendByte(int deviceAddress, byte dataValue) {
+    void I2C::sendByte(int deviceAddress, uint8_t dataValue) {
       Wire.beginTransmission(deviceAddress);
       Wire.send(dataValue);
       Wire.endTransmission();
@@ -13,13 +13,9 @@ namespace naxsoft {
     /**
       * i2c write byte to target device in specified data register address
       */
-    void I2C::updateRegister(int deviceAddress, byte dataAddress, byte dataValue) {
+    void I2C::updateRegister(int deviceAddress, uint8_t dataAddress, uint8_t dataValue) {
       Wire.beginTransmission(deviceAddress);
       Wire.send(dataAddress);
-
-    //    Wire.send((int)(dataAddress >> 8)); // MSB
-    //    Wire.send((int)(dataAddress & 0xFF)); // LS
-
       Wire.send(dataValue);
       Wire.endTransmission();
     }
@@ -42,6 +38,21 @@ namespace naxsoft {
         Wire.requestFrom(deviceAddress, 1);
         return Wire.receive();
     }
+
+    int I2C::readRegister(int deviceAddress, byte address) {
+        Wire.beginTransmission(deviceAddress);
+        Wire.send(address); // register to read
+        Wire.endTransmission();
+
+        Wire.requestFrom(deviceAddress, 1); // read a byte
+
+        while(!Wire.available()) {
+            // waiting
+        }
+
+        return Wire.receive();
+    }
+
 
     int I2C::readWord(int deviceAddress) {
       unsigned char msb, lsb;

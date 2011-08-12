@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include "Accelerometer.h"
 
+#include "../I2C.h"
+
 // The Arduino two-wire interface uses a 7-bit number for the address,
 // and sets the last bit correctly based on reads and writes
 #define ACC_ADDRESS 		(0x30 >> 1)
@@ -29,42 +31,52 @@
 #define INT2_THS_A  		(0x36)
 #define INT2_DURATION_A  	(0x37)
 
-
 namespace naxsoft {
 
-Accelerometer accelerometer;              // preinstatiate
+Accelerometer accelerometer; // preinstatiate
 
 void Accelerometer::init() {
+
 	//Enable Accelerometer
-	Wire.beginTransmission(ACC_ADDRESS);
-	Wire.send(CTRL_REG1_A);
-	//0x27 = 0b00100111
-	// Normal power mode, all axes enabled
-	Wire.send(0x27);
-	Wire.endTransmission();
+	// 0x27 = 0b00100111 => normal power mode, 50 Hz data rate, all axes enabled
+
+	I2C::updateRegister(ACC_ADDRESS, CTRL_REG1_A, 0x27);
+
+	// keep a full scale range ±2 gauss in continuous data update
+	// mode and change the little-endian to a big-endian structure
+	I2C::updateRegister(ACC_ADDRESS, CTRL_REG4_A, 0x40);
+
+	/*
+	 * todo Write(0x18, 0x23, 0x40);//set CTRL_REG4_A register
+	 * to keep a full scale range ±2 gauss in continuous data update mode and change the little-endian to a big-endian structure.
+	 */
 }
 
 void Accelerometer::read(accelerometer_data* data) {
 	//read accelerometer
-	Wire.beginTransmission(ACC_ADDRESS);
 	// assert the MSB of the address to get the accelerometer
 	// to do slave-transmit subaddress updating.
-	Wire.send(OUT_X_L_A | (1 << 7));
-	Wire.endTransmission();
-	Wire.requestFrom(ACC_ADDRESS,6);
+	I2C::sendByte(ACC_ADDRESS, OUT_X_L_A | (1 << 7));
 
-	while (Wire.available() < 6) { }
+	Wire.requestFrom(ACC_ADDRESS, 6);
 
-	uint8_t xla = Wire.receive();
-	uint8_t xha = Wire.receive();
-	uint8_t yla = Wire.receive();
-	uint8_t yha = Wire.receive();
-	uint8_t zla = Wire.receive();
-	uint8_t zha = Wire.receive();
+	while (Wire.available() < 6) {
+	}
 
-	data->x = (xha << 8 | xla) >> 4;
-	data->y = (yha << 8 | yla) >> 4;
-	data->z = (zha << 8 | zla) >> 4;
+	uint8_t xha = Wire.receive(); //read OUT_X_H_A (MSB)
+	uint8_t xla = Wire.receive(); //read OUT_X_L_A (LSB)
+	uint8_t yha = Wire.receive(); //read OUT_Y_H_A (MSB)
+	uint8_t yla = Wire.receive(); //read OUT_Y_L_A (LSB)
+	uint8_t zha = Wire.receive(); //read OUT_Z_H_A (MSB)
+	uint8_t zla = Wire.receive(); //read OUT_Z_L_A (LSB)
+
+	data->x = 0;
+	data->y = 0;
+	data->z = 0;
+
+	data->x = -(xha << 8 | xla); // nagate because it is mounted upside down
+	data->y = -(yha << 8 | yla); // nagate because it is mounted upside down
+	data->z = -(zha << 8 | zla); // nagate because it is mounted upside down
 }
 
 } // namespace

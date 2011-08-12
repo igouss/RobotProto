@@ -3,18 +3,15 @@
 
 namespace naxsoft {
 	typedef struct {
-		int x;
-		int y;
-		int z;
+		int x; // pitch
+		int y; // roll
+		int z; // yaw
 	} gyroscope_data;
 
 	class Gyroscope {
 	public:
 		int setupL3G4200D(int scale);
 		void getGyroValues(gyroscope_data* data);
-	private:
-		int readRegister(int deviceAddress, byte address);
-		void writeRegister(int deviceAddress, byte address, byte val);
 	};
 
 	extern Gyroscope gyroscope;

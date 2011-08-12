@@ -123,11 +123,11 @@ boolean Processor::accelerometer(Protocol const* in) {
 
 	Serial.print("Accelerometer: ");
 	Serial.print("X: ");
-	Serial.print(-adata.x);
+	Serial.print(adata.x);
 	Serial.print(" Y: ");
-	Serial.print(-adata.y);
+	Serial.print(adata.y);
 	Serial.print(" Z: ");
-	Serial.println(-adata.z);
+	Serial.println(adata.z);
 
 	return true;
 }
@@ -140,11 +140,24 @@ boolean Processor::compass(Protocol const* in) {
 
 	Serial.print("      Compass: ");
 	Serial.print("X: ");
-	Serial.print(-cdata.x);
+	Serial.print(cdata.x);
 	Serial.print(" Y: ");
-	Serial.print(-cdata.y);
+	Serial.print(cdata.y);
 	Serial.print(" Z: ");
-	Serial.println(-cdata.z);
+	Serial.print(cdata.z);
+
+
+	Serial.print(" heading: ");
+	Serial.print(naxsoft::compass.getHeading(&cdata));
+
+	gyroscope_data gdata;
+	naxsoft::gyroscope.getGyroValues(&gdata); // This will update x, y, and z with new values
+	int pitch = gdata.x;
+	int roll = gdata.y;
+
+	Serial.print(" comp heading: ");
+	Serial.print(naxsoft::compass.getTiltCompensatedHeading(&cdata, pitch, roll));
+	Serial.println();
 
 	return true;
 }
