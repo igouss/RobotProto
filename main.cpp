@@ -138,11 +138,11 @@ void setup() {
 	Tlc.init();
 	Wire.begin();
 
-	Serial.println("starting up gyroscope");
+//	Serial.println("starting up gyroscope");
 	naxsoft::gyroscope.setupL3G4200D(250); // Configure L3G4200  - 250, 500 or 2000 deg/sec
-	Serial.println("starting up accelerometer");
+//	Serial.println("starting up accelerometer");
 	naxsoft::accelerometer.init();
-	Serial.println("starting up compass");
+//	Serial.println("starting up compass");
 	naxsoft::compass.init();
 
 	// delay(1500); //wait for the sensor to be ready
@@ -178,7 +178,7 @@ void setup() {
 	//   proto = new Protocol(transport);
 
 	//   proto->writeI8(8);
-
+/*
 	Serial.println();
 	Serial.println();
 	Serial.println("CPU: ATmega168");
@@ -186,8 +186,9 @@ void setup() {
 	Serial.println(F_CPU / 1000000.0);
 	Serial.print("Free mem (bytes): ");
 	Serial.println(freeMem);
+*/
 	//  byte oldSpeed =  EEPROM.read(PMEM_SPEED);
-	naxsoft::DcMotor::motor_move_pwm(MOTOR_COAST, 0);
+//	naxsoft::DcMotor::motor_move_pwm(MOTOR_COAST, 0);
 	//   motor_move_pwm(MOTOR_CW, 128);
 }
 
@@ -214,16 +215,17 @@ void loop() {
 	// Turn on first len      ...    Turn on second led
 	// 04 04 01 80   ...             04 04 02 80
 	// --                             | --> protocol::readMessageBegin:  messageType
+	//                                |     { T_CALL = 1, T_REPLY = 2, T_EXCEPTION  = 3, T_ONEWAY = 4 }
 	//    __                          | --> Processor::process: rpc
 	//       --                       | --> Processor::tlc: chan
 	//          __                    | --> Processor::tlc: value
-	// 04 05
+	// 01 05
 	// --                             | --> protocol::readMessageBegin:  messageType
 	//    __                          | --> Processor::accelerometer
-	// 04 06
+	// 01 06
 	// --                             | --> protocol::readMessageBegin:  messageType
 	//    __                          | --> Processor::compass
-	// 04 07
+	// 01 07
 	// --                             | --> protocol::readMessageBegin:  messageType
 	//    __                          | --> Processor::gyroscope
 
