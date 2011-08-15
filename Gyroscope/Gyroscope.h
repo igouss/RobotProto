@@ -1,6 +1,9 @@
 #ifndef GYROSCOPE_H_
 #define GYROSCOPE_H_
 
+#include <WConstants.h>
+
+
 namespace naxsoft {
 
 	/*
@@ -18,7 +21,8 @@ namespace naxsoft {
 	public:
 		int setupL3G4200D(int scale);
 		void getGyroValues(gyroscope_data* data);
-		int16_t getTemperature();
+		int8_t getTemperature();
+		bool isDataAvailable();
 	};
 
 	extern Gyroscope gyroscope;

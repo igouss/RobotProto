@@ -3,6 +3,7 @@
 #include "Compass.h"
 
 #include "../I2C.h"
+#include "../bitops.h"
 
 /*
  * The strength of the earth's magnetic field is about 0.5 to 0.6 gauss and has a component
@@ -68,12 +69,22 @@ void Compass::init() {
 	I2C::updateRegister(MAG_ADDRESS, MR_REG_M, 0x00);
 }
 
+bool Compass::isDataAvailable() {
+	byte reg = I2C::readRegister(MAG_ADDRESS, SR_REG_M);
+	return BITSSET(reg, BIT(0)); // RDY
+}
+
 /**
  * Read magnetometer
  * Resolution 1.5 Gauss
  * Discrete values from -2048 to +2048
  */
 void Compass::read(compass_data* data) {
+//	while (!isDataAvailable()) {
+//		delayMicroseconds(10);
+//	}
+
+
 	I2C::sendByte(MAG_ADDRESS, OUT_X_H_M);
 	Wire.requestFrom(MAG_ADDRESS, 6); // read MR_REG_M
 

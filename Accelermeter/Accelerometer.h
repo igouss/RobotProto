@@ -18,6 +18,7 @@ class Accelerometer {
 public:
 	void init();
 	void read(accelerometer_data* data);
+	bool isDataAvailable();
 };
 
 extern Accelerometer accelerometer;

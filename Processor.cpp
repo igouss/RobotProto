@@ -212,13 +212,13 @@ boolean Processor::compass(Protocol const* in, Protocol const* const out) {
 
 boolean Processor::gyroscope(Protocol const* in, Protocol const* const out) {
 	(void) in;
-	gyroscope_data gdata;
-	naxsoft::gyroscope.getGyroValues(&gdata); // This will update x, y, and z with new values
 
 	out->writeMessageBegin(T_REPLY);
-	out->writeI16(gdata.p);
-	out->writeI16(gdata.r);
-	out->writeI16(gdata.y);
+		gyroscope_data gdata;
+		naxsoft::gyroscope.getGyroValues(&gdata); // This will update x, y, and z with new values
+		out->writeI16(gdata.p);
+		out->writeI16(gdata.r);
+		out->writeI16(gdata.y);
 	out->writeMessageEnd();
 
 	/*

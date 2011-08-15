@@ -22,6 +22,7 @@ public:
 	void read(compass_data* data);
 	double getHeading(compass_data* data);
 	double getTiltCompensatedHeading(compass_data* cdata, int pitch, int roll);
+	bool isDataAvailable();
 };
 
 extern Compass compass;
