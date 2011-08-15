@@ -125,7 +125,7 @@ void __cxa_guard_abort(__guard *) {
 
 
 void setup() {
-	pinMode(13, OUTPUT);
+	pinMode(LED_1, OUTPUT);
 	//  digitalWrite(FORWARD_PIN, HIGH); //Activate the pull up resistor
 	pinMode(FORWARD_PIN, OUTPUT);
 	pinMode(REWERSE_PIN, OUTPUT);
@@ -167,7 +167,7 @@ void setup() {
 	//  attachInterrupt(1, isr1, CHANGE); // D3
 
 	// http://tronixstuff.wordpress.com/2010/12/07/tutorial-arduino-and-the-aref-pin/
-	analogReference(EXTERNAL); // use AREF for reference voltage
+	// analogReference(EXTERNAL); // use AREF for reference voltage
 
 	//  blink(LED_1, 3, 500);
 	Serial.begin(9600);

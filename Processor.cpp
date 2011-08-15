@@ -29,17 +29,23 @@ boolean Processor::process(Protocol const* const in, Protocol const* const out) 
 	int8_t rpc = 0;
 	in->readI8(rpc);
 
+	bool result = false;
+
 	switch(messageType) {
 	case T_CALL:
-		return processSyncFunctionCall(rpc, in, out);
+		result = processSyncFunctionCall(rpc, in, out);
+		break;
 	case T_ONEWAY:
-		return processASyncFunctionCall(rpc, in, out);
+		result = processASyncFunctionCall(rpc, in, out);
+		break;
 	default:
-		return false;
+		result = false;
+		break;
 	}
 
 	in->readMessageEnd();
-	delay(100); //Just here to slow down the serial to make it more readable
+	return result;
+//	delay(100); //Just here to slow down the serial to make it more readable
 
 
 	//  Serial.print("name = ");

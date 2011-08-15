@@ -36,20 +36,13 @@ namespace naxsoft {
 Accelerometer accelerometer; // preinstatiate
 
 void Accelerometer::init() {
-
 	//Enable Accelerometer
 	// 0x27 = 0b00100111 => normal power mode, 50 Hz data rate, all axes enabled
-
 	I2C::updateRegister(ACC_ADDRESS, CTRL_REG1_A, 0x27);
 
 	// keep a full scale range ±2 gauss in continuous data update
 	// mode and change the little-endian to a big-endian structure
 	I2C::updateRegister(ACC_ADDRESS, CTRL_REG4_A, 0x40);
-
-	/*
-	 * todo Write(0x18, 0x23, 0x40);//set CTRL_REG4_A register
-	 * to keep a full scale range ±2 gauss in continuous data update mode and change the little-endian to a big-endian structure.
-	 */
 }
 
 void Accelerometer::read(accelerometer_data* data) {

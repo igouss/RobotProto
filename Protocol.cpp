@@ -24,7 +24,8 @@ namespace naxsoft {
     }
 
     uint32_t Protocol::writeMessageEnd() const {
-      return 0;
+    	this->trans_->flush();
+    	return 0;
     }
 
 

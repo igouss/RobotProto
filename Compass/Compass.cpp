@@ -87,10 +87,6 @@ void Compass::read(compass_data* data) {
 	uint8_t zhm = Wire.receive(); //read OUT_Z_H_M (MSB)
 	uint8_t zlm = Wire.receive(); //read OUT_Z_L_M (LSB)
 
-	data->x = 0;
-	data->y = 0;
-	data->z = 0;
-
 	data->x = - (xhm << 8 | xlm); // nagate because it is mounted upside down
 	data->y = - (yhm << 8 | ylm); // nagate because it is mounted upside down
 	data->z = - (zhm << 8 | zlm); // nagate because it is mounted upside down
