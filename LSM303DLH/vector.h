@@ -1,8 +1,13 @@
 #ifndef vector_h
 #define vector_h
+
+#include <inttypes.h>
+
 typedef struct vector
 {
-  float x, y, z;
+	int16_t x;
+	int16_t y;
+	int16_t z;
 } vector;
 
 extern void vector_cross(const vector *a, const vector *b, vector *out);

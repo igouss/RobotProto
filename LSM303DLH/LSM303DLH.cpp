@@ -2,7 +2,7 @@
 #include <math.h>
 
 #include "LSM303DLH.h"
-#include "vector.h"
+// #include "vector.h"
 
 // Defines ////////////////////////////////////////////////////////////////
 
@@ -52,6 +52,7 @@
 #define IRB_REG_M   		(0x0B)
 #define IRC_REG_M   		(0x0C)
 
+
 // Constructors ////////////////////////////////////////////////////////////////
 
 LSM303DLH::LSM303DLH()
@@ -84,6 +85,28 @@ void LSM303DLH::enable(void)
 	Wire.send(0x00);
 	Wire.endTransmission();
 }
+
+// https://build.meego.com/package/view_file?file=linux-2.6.36-l3g4200-gyroscope-driver.patch&package=kernel-adaptation-medfield&project=devel%3Akernel&srcmd5=ccc591d4b5b5c5821edc6df2c612de50
+static inline int32_t l3g4200dh_scale_reading(int16_t data, int scale)
+{
+   int32_t tmpdata = data;
+
+   switch (scale) {
+       case 250:
+           tmpdata *= 875;
+           tmpdata /= 100;
+           break;
+       case 500:
+           tmpdata *= 175;
+           tmpdata /= 10;
+           break;
+       case 2000:
+           tmpdata *= 70;
+           break;
+   }
+   return tmpdata;
+}
+
 
 // Reads all 6 channels of the LSM303DLH and stores them in the object variables
 void LSM303DLH::read()

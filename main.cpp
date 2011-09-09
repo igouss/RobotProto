@@ -1,42 +1,7 @@
 #define STRLEN(s) (sizeof(s) / sizeof(*s) - 1)
-
-#include "WProgram.h"
-// build process http://www.arduino.cc/en/Hacking/BuildProcess
-#include <stdlib.h>
-
-#include <stdio.h>
-#include <inttypes.h>
-
-#include <Wire.h>
-
-//#include "EEPROM/EEPROM.h"
-#include "Tlc5940/Tlc5940.h"
-#include "Tlc5940/tlc_animations.h"
-#include "Tlc5940/tlc_config.h"
-#include "Tlc5940/tlc_fades.h"
-#include "Tlc5940/tlc_progmem_utils.h"
-#include "Tlc5940/tlc_servos.h"
-#include "Tlc5940/tlc_shifts.h"
-
-#include "DcMotor.h"
-#include "XBeeATTransport.h"
-#include "Protocol.h"
-#include "Processor.h"
-#include "MemoryTest.h"
-
-//#include "LSM303DLH/LSM303DLH.h"
-
-#include "Accelermeter/Accelerometer.h"
-#include "Compass/Compass.h"
-#include "Gyroscope/Gyroscope.h"
-
-// LSM303DLH compass;
-
-//#include "TimerOne.h"
-
 #define DEBUG 1
-#include "DebugUtils.h"
-
+//#define TWI_FREQ 400000L // 400kHz, default is 100kHz 100000L
+#define CPU_FREQ 16000000L
 #define ZIGBE_PAN_ID 0xCAFE
 
 #define ZIGBEE_MY_ADDR 0xDEAD
@@ -46,6 +11,16 @@
 #define ZIGBEE_REMOTE_ADDR 0xBEEF
 #define ZIGBE_REMOTE_SERIAL_HIGH 0x13A200
 #define ZIGBE_REMOTE_SERIAL_LOW 0x404B2098
+
+/*
+ * Arduino Default: TWI_FREQ 100000L
+ * I2C Pull-up Resistor Setting Suggestion:
+ * < 100kbps   4.7kOhm
+ *   100kbps   2.2kOhm
+ *   400kbps   1.0kOhm
+ */
+#define TWI_FREQ 400000L
+
 
 #define FORWARD_PIN 4
 #define REWERSE_PIN 3
@@ -67,6 +42,33 @@
 #define LED_1 13
 #define max_pwm 1000 //this controls the period of one complete cycle
 #define PMEM_SPEED 0
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include "WProgram.h"
+#include <Wire.h>
+
+#include "Tlc5940/Tlc5940.h"
+#include "Tlc5940/tlc_animations.h"
+#include "Tlc5940/tlc_config.h"
+#include "Tlc5940/tlc_fades.h"
+#include "Tlc5940/tlc_progmem_utils.h"
+#include "Tlc5940/tlc_servos.h"
+#include "Tlc5940/tlc_shifts.h"
+#include "DcMotor.h"
+#include "Thrift/XBeeATTransport.h"
+#include "Thrift/Protocol.h"
+#include "Processor.h"
+#include "MemoryTest.h"
+#include "Accelermeter/Accelerometer.h"
+#include "Compass/Compass.h"
+#include "Gyroscope/Gyroscope.h"
+#include "DebugUtils.h"
+
+
+
 
 /*
  static char pwm_counter; //used to count from 0 to max_pwm
@@ -124,8 +126,10 @@ void __cxa_guard_abort(__guard *) {
 }
 
 
+
 void setup() {
 	pinMode(LED_1, OUTPUT);
+
 	//  digitalWrite(FORWARD_PIN, HIGH); //Activate the pull up resistor
 	pinMode(FORWARD_PIN, OUTPUT);
 	pinMode(REWERSE_PIN, OUTPUT);
@@ -137,6 +141,9 @@ void setup() {
 
 	Tlc.init();
 	Wire.begin();
+
+//	TWBR = ((CPU_FREQ / TWI_FREQ) - 16) / 2;
+
 
 //	Serial.println("starting up gyroscope");
 	naxsoft::gyroscope.setupL3G4200D(250); // Configure L3G4200  - 250, 500 or 2000 deg/sec
@@ -172,7 +179,7 @@ void setup() {
 	//  blink(LED_1, 3, 500);
 	Serial.begin(9600);
 
-	int freeMem = naxsoft::MemoryTest::availableMemory();
+	// int freeMem = naxsoft::MemoryTest::availableMemory();
 
 	//   transport = new XBeeATTransport();
 	//   proto = new Protocol(transport);
@@ -237,9 +244,11 @@ void loop() {
 //	  Serial.println();
 //	  Serial.println();
 //	  delay(850); //Just here to slow down the serial to make it more readable
+//	 digitalWrite(LED_1, HIGH);   // set the LED on
+
 
 	if (transport.peek() == true) {
-		naxsoft::processor.process(&proto, &proto);
+		naxsoft::processor.process(&proto);
 	}
 
 	/*

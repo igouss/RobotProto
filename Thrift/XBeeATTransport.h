@@ -3,6 +3,8 @@
 
 #include <WConstants.h>
 
+#define CTS_PIN 4 // Hardware flow control -- clear to send
+
 namespace naxsoft {
 
     class XBeeATTransport {
@@ -16,10 +18,6 @@ namespace naxsoft {
          * Destroyes the object, closing the transport if necessary.
          */
         //~XBeeATTransport();
-
-    //  void* operator new(size_t size);
-    //  void operator delete(void* ptr);
-
 
 
       /**

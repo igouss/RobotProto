@@ -1,9 +1,10 @@
 #include <WConstants.h>
 #include <HardwareSerial.h>
+#include <util/crc16.h>
+
 #include "Tlc5940/Tlc5940.h"
 #include "Processor.h"
 #include "DcMotor.h"
-#include "Protocol.h"
 
 #include "Accelermeter/Accelerometer.h"
 #include "Compass/Compass.h"
@@ -18,35 +19,37 @@
 
 namespace naxsoft {
 
+uint8_t lo8(uint16_t val) {
+	return (uint8_t) val;
+}
+
+uint8_t hi8(uint16_t val) {
+	return (uint8_t) (val >> 8);
+}
+
 Processor processor; // preinstatiate
 
-boolean Processor::process(Protocol const* const in, Protocol const* const out) {
+boolean Processor::process(Protocol const* const proto) {
 	//  Serial.println("Processor::process");
 	//	  char name = 0;
 	TMessageType messageType;
 	//	  int32_t seqid = 0;
-	in->readMessageBegin(messageType);
+	proto->readMessageBegin(messageType);
 	int8_t rpc = 0;
-	in->readI8(rpc);
+	proto->readI8(rpc);
 
 	bool result = false;
 
-	switch(messageType) {
+	switch (messageType) {
 	case T_CALL:
-		result = processSyncFunctionCall(rpc, in, out);
-		break;
 	case T_ONEWAY:
-		result = processASyncFunctionCall(rpc, in, out);
+		result = processFunctionCall(rpc, proto);
 		break;
 	default:
 		result = false;
 		break;
 	}
-
-	in->readMessageEnd();
 	return result;
-//	delay(100); //Just here to slow down the serial to make it more readable
-
 
 	//  Serial.print("name = ");
 	//  Serial.println(name);
@@ -56,49 +59,35 @@ boolean Processor::process(Protocol const* const in, Protocol const* const out) 
 	//  Serial.println(seqid);
 }
 
-boolean Processor::processSyncFunctionCall(int8_t rpc, Protocol const* const in, Protocol const* const out) {
-//	Serial.print("RPC = ");
-//	Serial.println(rpc);
+boolean Processor::processFunctionCall(int8_t rpc, Protocol const* const proto) {
+	//	Serial.print("RPC = ");
+	//	Serial.println(rpc);
 
-	boolean result = true;
+	boolean result = false;
 	switch (rpc) {
 	case ACCELEROMETER:
-		result = this->accelerometer(in, out);
+		result = this->accelerometer(proto);
 		break;
 	case COMPASS:
-		result = this->compass(in, out);
+		result = this->compass(proto);
 		break;
 	case GYROSCOPE:
-		result = this->gyroscope(in, out);
+		result = this->gyroscope(proto);
 		break;
-	default:
-		result = false;
-	};
-	return result;
-
-}
-boolean Processor::processASyncFunctionCall(int8_t rpc, Protocol const* const in, Protocol const* const out) {
-//	Serial.print("RPC = ");
-//	Serial.println(rpc);
-
-	boolean result = true;
-	switch (rpc) {
 	case DC_MOTOR_SPEED:
-		result = this->processDcMotor(in, out);
+		result = this->processDcMotor(proto);
 		break;
 	case TLC:
-		result = this->tlc(in, out);
+		result = this->tlc(proto);
 		break;
 	default:
 		result = false;
 	};
-	in->readMessageEnd();
 	return result;
 
 }
 
-boolean Processor::processDcMotor(Protocol const* const in, Protocol const* const out) {
-	(void) out;
+boolean Processor::processDcMotor(Protocol const* const proto) {
 	int8_t motor1;
 	int8_t motor2;
 	int8_t motor3;
@@ -112,18 +101,22 @@ boolean Processor::processDcMotor(Protocol const* const in, Protocol const* cons
 	int8_t direction3;
 	int8_t direction4;
 
-	in->readI8(motor1);
-	in->readI8(motor2);
-	in->readI8(motor3);
-	in->readI8(motor4);
-	in->readI16(speed1);
-	in->readI16(speed2);
-	in->readI16(speed3);
-	in->readI16(speed4);
-	in->readI8(direction1);
-	in->readI8(direction2);
-	in->readI8(direction3);
-	in->readI8(direction4);
+	proto->readI8(motor1);
+	proto->readI8(motor2);
+	proto->readI8(motor3);
+	proto->readI8(motor4);
+	proto->readI16(speed1);
+	proto->readI16(speed2);
+	proto->readI16(speed3);
+	proto->readI16(speed4);
+	proto->readI8(direction1);
+	proto->readI8(direction2);
+	proto->readI8(direction3);
+	proto->readI8(direction4);
+	proto->readMessageEnd();
+
+
+
 	dcMotor.start(motor1, speed1, direction1);
 	dcMotor.start(motor2, speed2, direction2);
 	dcMotor.start(motor3, speed3, direction3);
@@ -131,108 +124,142 @@ boolean Processor::processDcMotor(Protocol const* const in, Protocol const* cons
 	return true;
 }
 
-boolean Processor::tlc(Protocol const* in, Protocol const* const out) {
-	(void) out;
+boolean Processor::tlc(Protocol const* proto) {
 	// Serial.println("Processor::tlc");
 	int8_t channel;
 	int8_t value;
 
-	in->readI8(channel);
+	proto->readI8(channel);
 	// Serial.print("channel = ");
 	// Serial.println(channel);
 
-	in->readI8(value);
+	proto->readI8(value);
 	// Serial.print("value = ");
 	// Serial.println(value);
+
+	proto->readMessageEnd();
 
 	Tlc.set(channel, value);
 	return true;
 }
 
-boolean Processor::accelerometer(Protocol const* in, Protocol const* const out) {
-	(void) in;
+boolean Processor::accelerometer(Protocol const* proto) {
 
+	uint16_t localcrc = 0xffff;
 	accelerometer_data adata;
 	naxsoft::accelerometer.read(&adata);
 
-	out->writeMessageBegin(T_REPLY);
-	out->writeI16(adata.x);
-	out->writeI16(adata.y);
-	out->writeI16(adata.z);
-	out->writeMessageEnd();
+	proto->readMessageEnd();
+	proto->writeMessageBegin(T_REPLY);
+	proto->writeI16(adata.x);
+	proto->writeI16(adata.y);
+	proto->writeI16(adata.z);
+
+
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(adata.x));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(adata.x));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(adata.y));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(adata.y));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(adata.z));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(adata.z));
+	proto->writeI16(localcrc);
+
+	proto->writeMessageEnd();
 
 	/*
-	Serial.print("Accelerometer: ");
-	Serial.print("X: ");
-	Serial.print(adata.x);
-	Serial.print(" Y: ");
-	Serial.print(adata.y);
-	Serial.print(" Z: ");
-	Serial.println(adata.z);
-	*/
+	 Serial.print("Accelerometer: ");
+	 Serial.print("X: ");
+	 Serial.print(adata.x);
+	 Serial.print(" Y: ");
+	 Serial.print(adata.y);
+	 Serial.print(" Z: ");
+	 Serial.println(adata.z);
+	 */
 
 	return true;
 }
 
-boolean Processor::compass(Protocol const* in, Protocol const* const out) {
-	(void) in;
-
+boolean Processor::compass(Protocol const* proto) {
+	uint16_t localcrc = 0xffff;
 	compass_data cdata;
 	naxsoft::compass.read(&cdata);
-	out->writeMessageBegin(T_REPLY);
-	out->writeI16(cdata.x);
-	out->writeI16(cdata.y);
-	out->writeI16(cdata.z);
-	out->writeMessageEnd();
+
+	proto->readMessageEnd();
+	proto->writeMessageBegin(T_REPLY);
+	proto->writeI16(cdata.x);
+	proto->writeI16(cdata.y);
+	proto->writeI16(cdata.z);
+
+
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(cdata.x));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(cdata.x));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(cdata.y));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(cdata.y));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(cdata.z));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(cdata.z));
+	proto->writeI16(localcrc);
+
+	proto->writeMessageEnd();
 
 	/*
-	Serial.print("      Compass: ");
-	Serial.print("X: ");
-	Serial.print(cdata.x);
-	Serial.print(" Y: ");
-	Serial.print(cdata.y);
-	Serial.print(" Z: ");
-	Serial.print(cdata.z);
+	 Serial.print("      Compass: ");
+	 Serial.print("X: ");
+	 Serial.print(cdata.x);
+	 Serial.print(" Y: ");
+	 Serial.print(cdata.y);
+	 Serial.print(" Z: ");
+	 Serial.print(cdata.z);
 
 
-	Serial.print(" heading: ");
-	Serial.print(naxsoft::compass.getHeading(&cdata));
-	*/
+	 Serial.print(" heading: ");
+	 Serial.print(naxsoft::compass.getHeading(&cdata));
+	 */
 
-//	int pitch = gdata.p;
-//	int roll = gdata.r;
+	//	int pitch = gdata.p;
+	//	int roll = gdata.r;
 
 	/*
-	Serial.print(" comp heading: ");
-	Serial.print(naxsoft::compass.getTiltCompensatedHeading(&cdata, pitch, roll));
-	Serial.println();
-	*/
+	 Serial.print(" comp heading: ");
+	 Serial.print(naxsoft::compass.getTiltCompensatedHeading(&cdata, pitch, roll));
+	 Serial.println();
+	 */
 	return true;
 }
 
-boolean Processor::gyroscope(Protocol const* in, Protocol const* const out) {
-	(void) in;
+boolean Processor::gyroscope(Protocol const* proto) {
+	uint16_t localcrc = 0xffff;
+	gyroscope_data gdata;
+	naxsoft::gyroscope.getGyroValues(&gdata); // This will update x, y, and z with new values
 
-	out->writeMessageBegin(T_REPLY);
-		gyroscope_data gdata;
-		naxsoft::gyroscope.getGyroValues(&gdata); // This will update x, y, and z with new values
-		out->writeI16(gdata.p);
-		out->writeI16(gdata.r);
-		out->writeI16(gdata.y);
-	out->writeMessageEnd();
+	proto->readMessageEnd();
+	proto->writeMessageBegin(T_REPLY);
+	proto->writeI16(gdata.p);
+	proto->writeI16(gdata.r);
+	proto->writeI16(gdata.y);
+
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(gdata.p));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(gdata.p));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(gdata.r));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(gdata.r));
+	localcrc = ::_crc_ccitt_update(localcrc, hi8(gdata.y));
+	localcrc = ::_crc_ccitt_update(localcrc, lo8(gdata.y));
+	proto->writeI16(localcrc);
+
+
+	proto->writeMessageEnd();
 
 	/*
-	Serial.print("    Gyroscope:  ");
-	Serial.print(" Yaw: ");
-	Serial.print(gdata.y);
-	Serial.print(" Pitch: ");
-	Serial.print(gdata.p);
-	Serial.print(" Roll: ");
-	Serial.print(gdata.r);
-	Serial.print(" Temp: ");
-	Serial.print(naxsoft::gyroscope.getTemperature());
-	Serial.println();
-	*/
+	 Serial.print("    Gyroscope:  ");
+	 Serial.print(" Yaw: ");
+	 Serial.print(gdata.y);
+	 Serial.print(" Pitch: ");
+	 Serial.print(gdata.p);
+	 Serial.print(" Roll: ");
+	 Serial.print(gdata.r);
+	 Serial.print(" Temp: ");
+	 Serial.print(naxsoft::gyroscope.getTemperature());
+	 Serial.println();
+	 */
 	return true;
 }
 } // namespace
