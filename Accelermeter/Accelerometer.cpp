@@ -1,7 +1,6 @@
-#include <Wire.h>
 #include "Accelerometer.h"
 
-#include "../I2C.h"
+#include "../I2C/I2CProtocol.h"
 #include "../bitops.h"
 
 // The Arduino two-wire interface uses a 7-bit number for the address,
@@ -46,7 +45,8 @@ void Accelerometer::init() {
 	//            _      | PM0
 	//             _ _   | DR1 & DR0 ==> 00->50Hz, 01->100Hz, 10->400Hz, 11->1000Hz
 	//                ___| Enable x,y,z
-	I2C::updateRegister(ACC_ADDRESS, CTRL_REG1_A, 0x3F);
+
+	i2cProtocol.write(ACC_ADDRESS, CTRL_REG1_A, 0x3F);
 
 	// keep a full scale range ±2 gauss in continuous data update
 	// mode and change the little-endian to a big-endian structure
@@ -57,11 +57,12 @@ void Accelerometer::init() {
 	//        _0_0  | STsign ST
 	// F0 -> output registers are not updates between MSB and LSB reading, MSB first
 	//       ±8 gauss
-	I2C::updateRegister(ACC_ADDRESS, CTRL_REG4_A, 0xF0);
+	i2cProtocol.write(ACC_ADDRESS, CTRL_REG4_A, 0xF0);
 }
 
 bool Accelerometer::isDataAvailable() {
-	byte reg = I2C::readRegister(ACC_ADDRESS, STATUS_REG_A);
+	i2cProtocol.read(ACC_ADDRESS, STATUS_REG_A, 1);
+	uint8_t reg = i2cProtocol.receive();
 	return BITSSET(reg, BIT(3)); // ZYXDA
 }
 
@@ -70,26 +71,27 @@ void Accelerometer::read(accelerometer_data* data) {
 	//	2. If STATUS_REG(3) = 0 then go to 1
 	//	3. If STATUS_REG(7) = 1 then some data have been overwritten
 	//	4. read XYZ
-//	while (!isDataAvailable()) {
-//		delayMicroseconds(10);
-//	}
-
-	//read accelerometer
-	// assert the MSB of the address to get the accelerometer
-	// to do slave-transmit subaddress updating.
-	I2C::sendByte(ACC_ADDRESS, OUT_X_L_A | (1 << 7));
-
-	Wire.requestFrom(ACC_ADDRESS, 6);
-
-	while (Wire.available() < 6) {
+	while (!isDataAvailable()) {
+		delayMicroseconds(10);
 	}
 
-	uint8_t xha = Wire.receive(); //read OUT_X_H_A (MSB)
-	uint8_t xla = Wire.receive(); //read OUT_X_L_A (LSB)
-	uint8_t yha = Wire.receive(); //read OUT_Y_H_A (MSB)
-	uint8_t yla = Wire.receive(); //read OUT_Y_L_A (LSB)
-	uint8_t zha = Wire.receive(); //read OUT_Z_H_A (MSB)
-	uint8_t zla = Wire.receive(); //read OUT_Z_L_A (LSB)
+
+
+	// assert the MSB of the address to get the accelerometer
+	// to do slave-transmit subaddress updating.
+	//read accelerometer
+	i2cProtocol.read(ACC_ADDRESS, OUT_X_L_A | (1 << 7), 6);
+
+	while(i2cProtocol.available() < 6) {
+
+	}
+
+	uint8_t xha = i2cProtocol.receive(); //read OUT_X_H_A (MSB)
+	uint8_t xla = i2cProtocol.receive(); //read OUT_X_L_A (LSB)
+	uint8_t yha = i2cProtocol.receive(); //read OUT_Y_H_A (MSB)
+	uint8_t yla = i2cProtocol.receive(); //read OUT_Y_L_A (LSB)
+	uint8_t zha = i2cProtocol.receive(); //read OUT_Z_H_A (MSB)
+	uint8_t zla = i2cProtocol.receive(); //read OUT_Z_L_A (LSB)
 
 	data->x = 0;
 	data->y = 0;
@@ -99,9 +101,9 @@ void Accelerometer::read(accelerometer_data* data) {
 	// FS = 00->1  mg/digi
 	// FS = 01->2  mg/digi
 	// FS = 11->3.9mg/digi
-	data->x = -(xha << 8 | xla); // nagate because it is mounted upside down
-	data->y = -(yha << 8 | yla); // nagate because it is mounted upside down
-	data->z = -(zha << 8 | zla); // nagate because it is mounted upside down
+	data->x = (xha << 8 | xla); // nagate because it is mounted upside down
+	data->y = (yha << 8 | yla); // nagate because it is mounted upside down
+	data->z = (zha << 8 | zla); // nagate because it is mounted upside down
 }
 
 } // namespace

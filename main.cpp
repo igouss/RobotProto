@@ -19,7 +19,7 @@
  *   100kbps   2.2kOhm
  *   400kbps   1.0kOhm
  */
-#define TWI_FREQ 400000L
+//#define TWI_FREQ 400000L
 
 
 #define FORWARD_PIN 4
@@ -48,7 +48,10 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "WProgram.h"
-#include <Wire.h>
+
+#include "I2C/I2CProtocol.h"
+
+// #include <Wire.h>
 
 #include "Tlc5940/Tlc5940.h"
 #include "Tlc5940/tlc_animations.h"
@@ -62,9 +65,11 @@
 #include "Thrift/Protocol.h"
 #include "Processor.h"
 #include "MemoryTest.h"
+
 #include "Accelermeter/Accelerometer.h"
 #include "Compass/Compass.h"
 #include "Gyroscope/Gyroscope.h"
+
 #include "DebugUtils.h"
 
 
@@ -140,13 +145,19 @@ void setup() {
 	pinMode(ENABLE_PWM_PIN, OUTPUT);
 
 	Tlc.init();
-	Wire.begin();
+
+
+	i2cProtocol.begin();
+	i2cProtocol.pullup(true); // use internal pull-up
+	i2cProtocol.setSpeed(false); // low speed
+
+//	Wire.begin();
 
 //	TWBR = ((CPU_FREQ / TWI_FREQ) - 16) / 2;
 
 
 //	Serial.println("starting up gyroscope");
-	naxsoft::gyroscope.setupL3G4200D(250); // Configure L3G4200  - 250, 500 or 2000 deg/sec
+	naxsoft::gyroscope.init(2000); // Configure L3G4200  - 250, 500 or 2000 deg/sec
 //	Serial.println("starting up accelerometer");
 	naxsoft::accelerometer.init();
 //	Serial.println("starting up compass");

@@ -1,8 +1,7 @@
-#include <Wire.h>
 #include <math.h>
 #include "Compass.h"
 
-#include "../I2C.h"
+#include "../I2C/I2CProtocol.h"
 #include "../bitops.h"
 
 /*
@@ -56,21 +55,50 @@
 #define IRB_REG_M   		(0x0B)
 #define IRC_REG_M   		(0x0C)
 
+/* Magnetometer Sensor Full Scale */
+#define LSM303DLH_H_1_3G                0x20
+#define LSM303DLH_H_1_9G                0x40
+#define LSM303DLH_H_2_5G                0x60
+#define LSM303DLH_H_4_0G                0x80
+#define LSM303DLH_H_4_7G                0xA0
+#define LSM303DLH_H_5_6G                0xC0
+#define LSM303DLH_H_8_1G                0xE0
+
+/* Magnetic Sensor Operating Mode */
+#define LSM303DLH_MAG_NORMAL_MODE       0x00
+#define LSM303DLH_MAG_POS_BIAS          0x01
+#define LSM303DLH_MAG_NEG_BIAS          0x02
+#define LSM303DLH_MAG_CC_MODE           0x00
+#define LSM303DLH_MAG_SC_MODE           0x01
+#define LSM303DLH_MAG_SLEEP_MODE        0x03
+
+/* Magnetometer output data rate  */
+#define LSM303DLH_MAG_ODR_75            0x00    /* 0.75Hz output data rate */
+#define LSM303DLH_MAG_ODR1_5            0x04    /* 1.5Hz output data rate */
+#define LSM303DLH_MAG_ODR3_0            0x08    /* 3Hz output data rate */
+#define LSM303DLH_MAG_ODR7_5            0x09    /* 7.5Hz output data rate */
+#define LSM303DLH_MAG_ODR15             0x10    /* 15Hz output data rate */
+#define LSM303DLH_MAG_ODR30             0x14    /* 30Hz output data rate */
+#define LSM303DLH_MAG_ODR75             0x18    /* 75Hz output data rate */
+
+
+
+
 namespace naxsoft {
 
 Compass compass; // preinstatiate
 
 void Compass::init() {
-
 	// change the ODR from 15 Hz to 30 Hz
-	I2C::updateRegister(MAG_ADDRESS, CRA_REG_M, 0x14);
+	i2cProtocol.write(MAG_ADDRESS, CRA_REG_M, LSM303DLH_MAG_ODR30);
 
 	//Enable Magnetometer in Continuous conversion mode
-	I2C::updateRegister(MAG_ADDRESS, MR_REG_M, 0x00);
+	i2cProtocol.write(MAG_ADDRESS, MR_REG_M, LSM303DLH_MAG_NORMAL_MODE);
 }
 
 bool Compass::isDataAvailable() {
-	byte reg = I2C::readRegister(MAG_ADDRESS, SR_REG_M);
+	i2cProtocol.read(MAG_ADDRESS, SR_REG_M, 1);
+	uint8_t reg = i2cProtocol.receive();
 	return BITSSET(reg, BIT(0)); // RDY
 }
 
@@ -80,23 +108,22 @@ bool Compass::isDataAvailable() {
  * Discrete values from -2048 to +2048
  */
 void Compass::read(compass_data* data) {
-//	while (!isDataAvailable()) {
-//		delayMicroseconds(10);
-//	}
-
-
-	I2C::sendByte(MAG_ADDRESS, OUT_X_H_M);
-	Wire.requestFrom(MAG_ADDRESS, 6); // read MR_REG_M
-
-	while (Wire.available() < 6) {
+	while (!isDataAvailable()) {
+		delayMicroseconds(10);
 	}
 
-	uint8_t xhm = Wire.receive(); //read OUT_X_H_M (MSB)
-	uint8_t xlm = Wire.receive(); //read OUT_X_L_M (LSB)
-	uint8_t yhm = Wire.receive(); //read OUT_Y_H_M (MSB)
-	uint8_t ylm = Wire.receive(); //read OUT_Y_L_M (LSB)
-	uint8_t zhm = Wire.receive(); //read OUT_Z_H_M (MSB)
-	uint8_t zlm = Wire.receive(); //read OUT_Z_L_M (LSB)
+	i2cProtocol.read(MAG_ADDRESS, OUT_X_H_M, 6);
+
+
+	while (i2cProtocol.available() < 6) {
+	}
+
+	uint8_t xhm = i2cProtocol.receive(); //read OUT_X_H_M (MSB)
+	uint8_t xlm = i2cProtocol.receive(); //read OUT_X_L_M (LSB)
+	uint8_t yhm = i2cProtocol.receive(); //read OUT_Y_H_M (MSB)
+	uint8_t ylm = i2cProtocol.receive(); //read OUT_Y_L_M (LSB)
+	uint8_t zhm = i2cProtocol.receive(); //read OUT_Z_H_M (MSB)
+	uint8_t zlm = i2cProtocol.receive(); //read OUT_Z_L_M (LSB)
 
 	data->x = - (xhm << 8 | xlm); // nagate because it is mounted upside down
 	data->y = - (yhm << 8 | ylm); // nagate because it is mounted upside down
@@ -104,12 +131,6 @@ void Compass::read(compass_data* data) {
 }
 
 double Compass::getHeading(compass_data* cdata) {
-	/*
-	Serial.print("getHeading: X = ");
-	Serial.print(cdata->x);
-	Serial.print("getHeading: Y = ");
-	Serial.print(cdata->y);
-	*/
 	double azimuth = ::atan((double) cdata->y / (double) cdata->x);
 	return azimuth;
 }

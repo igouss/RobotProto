@@ -1,6 +1,8 @@
 #ifndef ACCELEROMETER_H_
 #define ACCELEROMETER_H_
 
+#include <inttypes.h>
+
 namespace naxsoft {
 typedef struct {
 	int16_t x;

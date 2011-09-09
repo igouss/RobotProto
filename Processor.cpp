@@ -166,15 +166,6 @@ boolean Processor::accelerometer(Protocol const* proto) {
 
 	proto->writeMessageEnd();
 
-	/*
-	 Serial.print("Accelerometer: ");
-	 Serial.print("X: ");
-	 Serial.print(adata.x);
-	 Serial.print(" Y: ");
-	 Serial.print(adata.y);
-	 Serial.print(" Z: ");
-	 Serial.println(adata.z);
-	 */
 
 	return true;
 }
@@ -201,28 +192,6 @@ boolean Processor::compass(Protocol const* proto) {
 
 	proto->writeMessageEnd();
 
-	/*
-	 Serial.print("      Compass: ");
-	 Serial.print("X: ");
-	 Serial.print(cdata.x);
-	 Serial.print(" Y: ");
-	 Serial.print(cdata.y);
-	 Serial.print(" Z: ");
-	 Serial.print(cdata.z);
-
-
-	 Serial.print(" heading: ");
-	 Serial.print(naxsoft::compass.getHeading(&cdata));
-	 */
-
-	//	int pitch = gdata.p;
-	//	int roll = gdata.r;
-
-	/*
-	 Serial.print(" comp heading: ");
-	 Serial.print(naxsoft::compass.getTiltCompensatedHeading(&cdata, pitch, roll));
-	 Serial.println();
-	 */
 	return true;
 }
 
@@ -248,18 +217,6 @@ boolean Processor::gyroscope(Protocol const* proto) {
 
 	proto->writeMessageEnd();
 
-	/*
-	 Serial.print("    Gyroscope:  ");
-	 Serial.print(" Yaw: ");
-	 Serial.print(gdata.y);
-	 Serial.print(" Pitch: ");
-	 Serial.print(gdata.p);
-	 Serial.print(" Roll: ");
-	 Serial.print(gdata.r);
-	 Serial.print(" Temp: ");
-	 Serial.print(naxsoft::gyroscope.getTemperature());
-	 Serial.println();
-	 */
 	return true;
 }
 } // namespace

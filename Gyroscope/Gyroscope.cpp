@@ -1,8 +1,6 @@
-#include <Wire.h>
-#include <WConstants.h>
-
-#include "../I2C.h"
 #include "Gyroscope.h"
+
+#include "../I2C/I2CProtocol.h"
 #include "../bitops.h"
 
 ///* l3g4200d gyroscope registers */
@@ -193,14 +191,16 @@ namespace naxsoft {
 
 Gyroscope gyroscope; // preinstatiate
 
-int Gyroscope::setupL3G4200D(int scale) {
+int Gyroscope::init(int scale) {
 	// If you'd like to adjust/use the HPF, you can edit the line below to configure CTRL_REG2:
-	I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG2, 0b00000000);
+	// I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG2, 0b00000000);
+	i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG2, 0b00000000);
 
 	// Configure CTRL_REG3 to generate data ready interrupt on INT2
 	// No interrupts used on INT1, if you'd like to configure INT1
 	// or INT2 otherwise, consult the datasheet:
-	I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG3, 0b00001000);
+	// I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG3, 0b00001000);
+	i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG3, 0b00001000);
 
 	// CTRL_REG4 controls the full-scale range, among other things:
 
@@ -216,26 +216,25 @@ int Gyroscope::setupL3G4200D(int scale) {
 	// is not required) with either the XYZDA bit present inside the STATUS_REG or with the RDY
 	// signal, it is strongly recommended to set the BDU (block data update) bit in CTRL_REG4 to 1.
 	if (scale == 250) {
-		I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG4, 0b10000000);
+		i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG4, 0b10000000);
 	} else if (scale == 500) {
-		I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG4, 0b10010000);
+		i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG4, 0b10010000);
 	} else {
-		I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG4, 0b10110000);
+		i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG4, 0b10110000);
 	}
 
 	// CTRL_REG5 controls high-pass filtering of outputs, use it if you'd like:
-	// I2C::updateRegister(L3G4_Address, CTRL_REG5, 0b00000000);
+	// i2cProtocol.write(L3G4_Address, CTRL_REG5, 0b00000000);
 
 	// Turn on sensor, Enable x, y, z, ODR = 100Hz
-	I2C::updateRegister(L3G4_Address, L3G4_CTRL_REG1, 0b00001111);
-
+	i2cProtocol.write(L3G4_Address, L3G4_CTRL_REG1, 0b00001111);
 	return 1;
 }
 
 bool Gyroscope::isDataAvailable() {
-	byte reg = I2C::readRegister(L3G4_Address, L3G4_STATUS_REG);
+	i2cProtocol.read(L3G4_Address, L3G4_STATUS_REG, 1);
+	uint8_t reg = i2cProtocol.receive();
 	return BITSSET(reg, BIT(L3G4_ZYXDA));
-
 }
 
 void Gyroscope::getGyroValues(gyroscope_data* data) {
@@ -243,27 +242,34 @@ void Gyroscope::getGyroValues(gyroscope_data* data) {
 	//	2. If STATUS_REG(3) = 0 then go to 1
 	//	3. If STATUS_REG(7) = 1 then some data have been overwritten
 	//	4. read XYZ
-//	while (!isDataAvailable()) {
-//		delayMicroseconds(10);
-//	}
-
-	I2C::sendByte(L3G4_Address, L3G4_OUT_X_L | L3G4_AUTOINC);
-
-	Wire.requestFrom(L3G4_Address, 6);
-
-	while (Wire.available() < 6) {
+	while (!isDataAvailable()) {
+		delayMicroseconds(10);
 	}
 
-	uint8_t xLSB = Wire.receive(); //read OUT_X_L_A (LSB)
-	uint8_t xMSB = Wire.receive(); //read OUT_X_H_A (MSB)
-	uint8_t yLSB = Wire.receive(); //read OUT_Y_L_A (LSB)
-	uint8_t yMSB = Wire.receive(); //read OUT_Y_H_A (MSB)
-	uint8_t zLSB = Wire.receive(); //read OUT_Z_L_A (LSB)
-	uint8_t zMSB = Wire.receive(); //read OUT_Z_H_A (MSB)
+	i2cProtocol.read(L3G4_Address, L3G4_OUT_X_L | L3G4_AUTOINC, 6);
 
-	data->r = -((xMSB << 8) | xLSB); // negate because mounted upsite-down
-	data->p = -((yMSB << 8) | yLSB); // negate because mounted upsite-down
-	data->y = -((zMSB << 8) | zLSB); // negate because mounted upsite-down
+	while (i2cProtocol.available() < 6) {
+	}
+
+	uint8_t xLSB = i2cProtocol.receive(); //read OUT_X_L_A (LSB)
+	uint8_t xMSB = i2cProtocol.receive(); //read OUT_X_H_A (MSB)
+	uint8_t yLSB = i2cProtocol.receive(); //read OUT_Y_L_A (LSB)
+	uint8_t yMSB = i2cProtocol.receive(); //read OUT_Y_H_A (MSB)
+	uint8_t zLSB = i2cProtocol.receive(); //read OUT_Z_L_A (LSB)
+	uint8_t zMSB = i2cProtocol.receive(); //read OUT_Z_H_A (MSB)
+
+	data->r = ((xMSB << 8) | xLSB); // negate because mounted upsite-down
+	data->p = ((yMSB << 8) | yLSB); // negate because mounted upsite-down
+	data->y = ((zMSB << 8) | zLSB); // negate because mounted upsite-down
+
+
+	// The scale values (sensitivity) from page 10 are : 8.75e-3,17.5e-3, 70e-3 for 250,500,2000 respectively.
+	//	250dps setting: 224/256 to get centi-degrees/sec
+	//	500 dps: 45/256 to get (roughly) deci-degrees/sec
+	//	2000 dps: 18/256 to get (roughly) deci-degrees/sec
+	data->r = (data->r * 18) >> 8;
+	data->p = (data->p * 18) >> 8;
+	data->y = (data->y * 18) >> 8;
 }
 
 /**
@@ -276,7 +282,8 @@ void Gyroscope::getGyroValues(gyroscope_data* data) {
  * Temp7 Temp6 Temp5 Temp4 Temp3 Temp2 Temp1 Temp0
  */
 int8_t Gyroscope::getTemperature() {
-	return I2C::readRegister(L3G4_Address, L3G4_OUT_TEMP);
+	i2cProtocol.read(L3G4_Address, L3G4_OUT_TEMP, 6);
+	return i2cProtocol.receive();
 }
 
 } // namespace

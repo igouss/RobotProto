@@ -1,7 +1,7 @@
 #ifndef COMPASS_H_
 #define COMPASS_H_
 
-// #include "../Accelermeter/Accelerometer.h"
+#include <inttypes.h>
 
 namespace naxsoft {
 typedef struct {
