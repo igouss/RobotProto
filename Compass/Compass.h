@@ -20,8 +20,7 @@ class Compass {
 public:
 	void init();
 	void read(compass_data* data);
-	double getHeading(compass_data* data);
-	double getTiltCompensatedHeading(compass_data* cdata, int pitch, int roll);
+private:
 	bool isDataAvailable();
 };
 

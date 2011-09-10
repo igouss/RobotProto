@@ -98,12 +98,15 @@ void Accelerometer::read(accelerometer_data* data) {
 	data->z = 0;
 
 	// 12 bit sensitivity
-	// FS = 00->1  mg/digi
-	// FS = 01->2  mg/digi
-	// FS = 11->3.9mg/digi
-	data->x = (xha << 8 | xla); // nagate because it is mounted upside down
-	data->y = (yha << 8 | yla); // nagate because it is mounted upside down
-	data->z = (zha << 8 | zla); // nagate because it is mounted upside down
+	// FS = 00 -> 1.0 mg/digi
+	// FS = 01 -> 2.0 mg/digi
+	// FS = 11 -> 3.9 mg/digi
+
+	// The accelerometer readings are a 12-bit reading "left-justified" in a 16 bit space,
+	// so you have to right shift it by 4.
+	data->x = (xha << 8 | xla) >> 4;
+	data->y = (yha << 8 | yla) >> 4;
+	data->z = (zha << 8 | zla) >> 4;
 }
 
 } // namespace

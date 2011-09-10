@@ -125,20 +125,12 @@ void Compass::read(compass_data* data) {
 	uint8_t zhm = i2cProtocol.receive(); //read OUT_Z_H_M (MSB)
 	uint8_t zlm = i2cProtocol.receive(); //read OUT_Z_L_M (LSB)
 
-	data->x = - (xhm << 8 | xlm); // nagate because it is mounted upside down
-	data->y = - (yhm << 8 | ylm); // nagate because it is mounted upside down
-	data->z = - (zhm << 8 | zlm); // nagate because it is mounted upside down
+
+    // offset and scale
+	data->x =  (xhm << 8 | xlm);
+	data->y =  (yhm << 8 | ylm);
+	data->z =  (zhm << 8 | zlm);
 }
 
-double Compass::getHeading(compass_data* cdata) {
-	double azimuth = ::atan((double) cdata->y / (double) cdata->x);
-	return azimuth;
-}
-
-double Compass::getTiltCompensatedHeading(compass_data* cdata, int16_t pitch, int16_t roll) {
-	cdata->x = cdata->x * cos(pitch) + cdata->z * sin(pitch);
-	cdata->y = cdata->x * sin(roll) * sin(pitch) + cdata->y * cos(roll) - cdata->z * sin(roll) * cos(pitch);
-	return getHeading(cdata);
-}
 
 } // namespace

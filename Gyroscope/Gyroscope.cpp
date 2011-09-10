@@ -258,18 +258,9 @@ void Gyroscope::getGyroValues(gyroscope_data* data) {
 	uint8_t zLSB = i2cProtocol.receive(); //read OUT_Z_L_A (LSB)
 	uint8_t zMSB = i2cProtocol.receive(); //read OUT_Z_H_A (MSB)
 
-	data->r = ((xMSB << 8) | xLSB); // negate because mounted upsite-down
-	data->p = ((yMSB << 8) | yLSB); // negate because mounted upsite-down
-	data->y = ((zMSB << 8) | zLSB); // negate because mounted upsite-down
-
-
-	// The scale values (sensitivity) from page 10 are : 8.75e-3,17.5e-3, 70e-3 for 250,500,2000 respectively.
-	//	250dps setting: 224/256 to get centi-degrees/sec
-	//	500 dps: 45/256 to get (roughly) deci-degrees/sec
-	//	2000 dps: 18/256 to get (roughly) deci-degrees/sec
-	data->r = (data->r * 18) >> 8;
-	data->p = (data->p * 18) >> 8;
-	data->y = (data->y * 18) >> 8;
+	data->r = ((xMSB << 8) | xLSB);
+	data->p = ((yMSB << 8) | yLSB);
+	data->y = ((zMSB << 8) | zLSB);
 }
 
 /**
