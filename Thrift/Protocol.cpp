@@ -124,7 +124,8 @@ uint32_t Protocol::writeI64(const int64_t i64) const {
 }
 
 uint32_t Protocol::writeFloat(const float dub) const {
-	int32_t net = dub;
+	int32_t net;
+	memcpy(&net, &dub, 4);
 	this->trans_->write((uint8_t*) &net, 4);
 	return 4;
 }
@@ -289,7 +290,7 @@ uint32_t Protocol::readI32(int32_t& i32) const {
 uint32_t Protocol::readI64(int64_t& i64) const {
 	uint8_t b[8];
 	this->trans_->readAll(b, 8);
-	i64 = *(int32_t*) b;
+	i64 = *(int64_t*) b;
 	return 8;
 }
 
@@ -311,12 +312,13 @@ uint32_t Protocol::readBinary(char* str) const {
 	return this->readString(str);
 }
 
-uint32_t Protocol::readStringBody(char* str, int32_t size) const {
+uint32_t Protocol::readStringBody(char*& str, int32_t size) const {
 	uint32_t result = 0;
 
 	if (size > 0) {
-		str = (char*) malloc(size);
+		str = (char*) malloc(size + 1);
 		result += this->trans_->readAll((uint8_t*) str, size);
+		str[size] = '\0';
 	}
 	return result;
 }
@@ -362,13 +364,10 @@ uint32_t Protocol::skip(TType type) const {
 	}
 	case T_STRUCT: {
 		uint32_t result = 0;
-		char* name = NULL;
+		char name[1];
 		int16_t fid;
 		TType ftype;
 		result += readStructBegin(name);
-		if (name != NULL) {
-			free(name);
-		}
 		while (true) {
 			result += readFieldBegin(name, ftype, fid);
 			if (ftype == T_STOP) {

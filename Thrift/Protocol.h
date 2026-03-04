@@ -152,7 +152,7 @@ namespace naxsoft {
         uint32_t skip(TType type) const;
      private:
        XBeeATTransport const* const trans_;
-       uint32_t readStringBody(char* str, int32_t size) const;
+       uint32_t readStringBody(char*& str, int32_t size) const;
     };
 }
 
